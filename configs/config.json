@@ -1,0 +1,15 @@
+{
+  "data_dir": "./data/train",
+  "train_csv": "./data/train.csv",
+  "test_csv": "./data/test.csv",
+  "result_path": "./train_result",
+  "batch_size": 64,
+  "epochs": 5,
+  "learning_rate": 0.001,
+  "model": {
+    "type": "timm",
+    "name": "resnet18",
+    "pretrained": true
+  },
+  "transform": "albumentations"
+}
