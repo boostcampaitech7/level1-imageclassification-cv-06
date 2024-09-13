@@ -3,9 +3,9 @@
   "testdata_dir": "./data/test",
   "train_csv": "./data/train.csv",
   "test_csv": "./data/test.csv",
-  "result_path": "./train_result",
+  "result_path": "./output/train_result",
   "batch_size": 64,
-  "epochs": 5,
+  "epochs": 1,
   "learning_rate": 0.001,
   "model": {
     "type": "timm",
