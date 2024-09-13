@@ -3,9 +3,10 @@
   "testdata_dir": "./data/test",
   "train_csv": "./data/train.csv",
   "test_csv": "./data/test.csv",
-  "result_path": "./output/train_result",
+  "result_path": "./train_result/resnet18",
+  "csv_path": "./output/output.csv",
   "batch_size": 64,
-  "epochs": 1,
+  "epochs": 5,
   "learning_rate": 0.001,
   "model": {
     "type": "timm",

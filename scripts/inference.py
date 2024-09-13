@@ -114,7 +114,7 @@ def main():
     test_info = test_info.reset_index().rename(columns={"index": "ID"})
     
     # DataFrame 저장
-    test_info.to_csv('output.csv', index=False)
+    test_info.to_csv(config['csv_path'], index=False)
 
 if __name__ == "__main__":
     main()
