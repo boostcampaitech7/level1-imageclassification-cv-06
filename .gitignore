@@ -1,3 +1,4 @@
 data/
 train_result/
 *.pyc
+__pycache__/
