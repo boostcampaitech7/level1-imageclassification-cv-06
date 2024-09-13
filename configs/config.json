@@ -1,5 +1,6 @@
 {
-  "data_dir": "./data/train",
+  "traindata_dir": "./data/train",
+  "testdata_dir": "./data/test",
   "train_csv": "./data/train.csv",
   "test_csv": "./data/test.csv",
   "result_path": "./train_result",
