@@ -3,7 +3,7 @@
   "testdata_dir": "./data/test",
   "train_csv": "./data/train.csv",
   "test_csv": "./data/test.csv",
-  "result_path": "./train_result/resnet18",
+  "result_path": "./train_result",
   "csv_path": "./output/output.csv",
   "batch_size": 64,
   "epochs": 5,
