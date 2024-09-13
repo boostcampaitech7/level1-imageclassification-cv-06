@@ -1,8 +1,6 @@
-# Image Classification
-
-Sketch 분류 경진대회
-
-# Level1 Sketch Image Classification Project
+# Boostcamp AI Tech 7 CV 06
+ 
+## Level1 Sketch Image Classification Project
 
 This project implements an image classification model using PyTorch and timm.
 
