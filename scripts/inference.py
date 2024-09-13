@@ -60,13 +60,13 @@ def main():
 
     # 추론에 사용할 Transform을 선언.
     transform_selector = TransformSelector(
-        transform_type=config['transform']['type']
+        transform_type=config['transform']
     )
     test_transform = transform_selector.get_transform(is_train=False)
     
     # 추론에 사용할 Dataset을 선언.
     test_dataset = CustomDataset(
-        root_dir=config['data_dir'],
+        root_dir=config['testdata_dir'],
         info_df=test_info,
         transform=test_transform,
         is_inference=True
