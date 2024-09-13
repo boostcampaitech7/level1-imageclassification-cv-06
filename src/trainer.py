@@ -92,6 +92,26 @@ class Trainer:
                 progress_bar.set_postfix(loss=loss.item())
         
         return total_loss / len(self.val_loader)
+    
+    def validate_acc(self) -> float:
+        # 모델의 검증을 진행
+        self.model.eval()
+        
+        correct_predictions = 0
+        total_samples = 0
+        progress_bar = tqdm(self.val_loader, desc="Validating", leave=False)
+        
+        with torch.no_grad():
+            for images, targets in progress_bar:
+                images, targets = images.to(self.device), targets.to(self.device)
+                outputs = self.model(images)
+                _, predicted = torch.max(outputs, 1)  # 예측된 클래스
+                correct_predictions += (predicted == targets).sum().item()
+                total_samples += targets.size(0)
+                progress_bar.set_postfix(correct_predictions=correct_predictions, total_samples=total_samples)
+        
+        accuracy = correct_predictions / total_samples
+        return accuracy
 
     def train(self) -> None:
         # 전체 훈련 과정을 관리
@@ -101,6 +121,9 @@ class Trainer:
             train_loss = self.train_epoch()
             val_loss = self.validate()
             print(f"Epoch {epoch+1}, Train Loss: {train_loss:.4f}, Validation Loss: {val_loss:.4f}\n")
+
+            val_acc = self.validate_acc()
+            print(f"Epoch {epoch+1}, Validation Acc: {val_acc:.4f}\n")
 
             self.save_model(epoch, val_loss)
             self.scheduler.step()
