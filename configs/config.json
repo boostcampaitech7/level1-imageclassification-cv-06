@@ -1,12 +1,12 @@
 {
-  "traindata_dir": "./data/train",
-  "testdata_dir": "./data/test",
-  "train_csv": "./data/train.csv",
-  "test_csv": "./data/test.csv",
+  "traindata_dir": "../Sample/project/data/train",
+  "testdata_dir": "../Sample/project/data/test",
+  "train_csv": "../Sample/project/data/train.csv",
+  "test_csv": "../Sample/project/data/test.csv",
   "result_path": "./train_result/resnet18",
   "csv_path": "./output/output.csv",
   "batch_size": 64,
-  "epochs": 5,
+  "epochs": 1,
   "learning_rate": 0.001,
   "model": {
     "type": "timm",
