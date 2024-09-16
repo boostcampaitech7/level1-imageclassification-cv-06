@@ -19,8 +19,9 @@ class EarlyStopper:
         elif (self.min_validation_loss + self.min_delta) < validation_loss:
             self.counter += 1 # 경고 count
             if self.counter >= self.patience: # 경고한 횟수가 일정 횟수 이상이면 조기 종료
+                print(f"[Early Stop] Validation loss is not updated properly.")
                 return True
-
+            
         # min_validation_loss가 갱신되었거나 delta 범위 안에 있다면 계속 학습
         return False
         

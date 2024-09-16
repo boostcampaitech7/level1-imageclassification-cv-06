@@ -17,6 +17,7 @@ from src.transforms import TransformSelector
 from src.models import ModelSelector
 from src.loss import Loss
 from src.trainer import Trainer
+from src.early_stopper import EarlyStopper
 
 
 # 설정 파일 로드
@@ -114,6 +115,10 @@ def main():
     # 학습에 사용할 Loss를 선언.
     loss_fn = Loss()
 
+    # 조기 종료를 위한 EarlyStopper 선언
+    early_stopper = EarlyStopper(patience=config['early_stop']['patience'], min_delta=config['early_stop']['min_delta'])
+        
+    
     # Trainer
     trainer = Trainer(
         model=model,
@@ -124,7 +129,8 @@ def main():
         scheduler=scheduler,
         loss_fn=loss_fn,
         epochs=config['epochs'],
-        result_path=config['result_path']
+        result_path=config['result_path'],
+        early_stopper=early_stopper
     )
 
     # 모델 학습.

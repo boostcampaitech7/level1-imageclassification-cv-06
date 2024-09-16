@@ -5,7 +5,7 @@ import torch.nn as nn
 import torch.optim as optim
 from tqdm.auto import tqdm
 from torch.utils.data import DataLoader
-from early_stopper import EarlyStopper
+from src.early_stopper import EarlyStopper
 
 
 class Trainer:
@@ -19,7 +19,8 @@ class Trainer:
         scheduler: optim.lr_scheduler,
         loss_fn: torch.nn.modules.loss._Loss, 
         epochs: int,
-        result_path: str
+        result_path: str,
+        early_stopper: EarlyStopper
     ):
         # 클래스 초기화: 모델, 디바이스, 데이터 로더 등 설정
         self.model = model  # 훈련할 모델
@@ -33,7 +34,8 @@ class Trainer:
         self.result_path = result_path  # 모델 저장 경로
         self.best_models = [] # 가장 좋은 상위 3개 모델의 정보를 저장할 리스트
         self.lowest_loss = float('inf') # 가장 낮은 Loss를 저장할 변수
-
+        self.early_stopper = early_stopper
+        
     def save_model(self, epoch, loss):
         # 모델 저장 경로 설정
         os.makedirs(self.result_path, exist_ok=True)
@@ -108,7 +110,6 @@ class Trainer:
 
     def train(self) -> None:
         # 전체 훈련 과정을 관리
-        early_stopper = EarlyStopper(patience=3, min_delta=1)
         for epoch in range(self.epochs):
             print(f"Epoch {epoch+1}/{self.epochs}")
             
@@ -116,9 +117,10 @@ class Trainer:
             val_loss, val_acc = self.validate()
             print(f"Epoch {epoch+1}, Train Loss: {train_loss:.4f},\n\t Validation Loss: {val_loss:.4f}, Validation Acc: {val_acc:.4f}\n")
             
-            # 더 이상 train이 안된다면 조기 종료
-            if early_stopper.early_stop(validation_loss=val_loss):
-                break
-            
             self.save_model(epoch, val_loss)
             self.scheduler.step()
+            
+            # 더 이상 train이 안된다면 조기 종료
+            if self.early_stopper.early_stop(validation_loss=val_loss):
+                break
+            
