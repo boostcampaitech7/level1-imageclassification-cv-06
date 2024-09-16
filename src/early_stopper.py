@@ -16,7 +16,7 @@ class EarlyStopper:
             self.min_validation_loss = validation_loss
             self.counter = 0
         # loss값이 여태까지 가장 작은 loss + delta 보다 크다면
-        elif (self.min_validation_loss + self.min_delta) < validation_loss:
+        elif (self.min_validation_loss + self.min_delta) <= validation_loss:
             self.counter += 1 # 경고 count
             if self.counter >= self.patience: # 경고한 횟수가 일정 횟수 이상이면 조기 종료
                 print(f"[Early Stop] Validation loss is not updated properly.")
