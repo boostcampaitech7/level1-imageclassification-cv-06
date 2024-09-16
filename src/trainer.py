@@ -5,6 +5,7 @@ import torch.nn as nn
 import torch.optim as optim
 from tqdm.auto import tqdm
 from torch.utils.data import DataLoader
+from early_stopper import EarlyStopper
 
 
 class Trainer:
@@ -61,7 +62,7 @@ class Trainer:
         self.model.train()
         
         total_loss = 0.0
-        progress_bar = tqdm(self.train_loader, desc="Training", leave=False, disable=True)
+        progress_bar = tqdm(self.train_loader, desc="Training", leave=False)
         
         for images, targets in progress_bar:
             images, targets = images.to(self.device), targets.to(self.device)
@@ -84,7 +85,7 @@ class Trainer:
         correct_predictions = 0
         total_samples = 0
         
-        progress_bar = tqdm(self.val_loader, desc="Validating", leave=False, disable=True)
+        progress_bar = tqdm(self.val_loader, desc="Validating", leave=False)
         
         with torch.no_grad():
             for images, targets in progress_bar:
@@ -107,12 +108,17 @@ class Trainer:
 
     def train(self) -> None:
         # 전체 훈련 과정을 관리
+        early_stopper = EarlyStopper(patience=3, min_delta=1)
         for epoch in range(self.epochs):
             print(f"Epoch {epoch+1}/{self.epochs}")
             
             train_loss = self.train_epoch()
             val_loss, val_acc = self.validate()
             print(f"Epoch {epoch+1}, Train Loss: {train_loss:.4f},\n\t Validation Loss: {val_loss:.4f}, Validation Acc: {val_acc:.4f}\n")
-
+            
+            # 더 이상 train이 안된다면 조기 종료
+            if early_stopper.early_stop(validation_loss=val_loss):
+                break
+            
             self.save_model(epoch, val_loss)
             self.scheduler.step()
