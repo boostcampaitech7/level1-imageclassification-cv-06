@@ -54,12 +54,12 @@ def main():
 
     # 학습에 사용할 Dataset을 선언.
     train_dataset = CustomDataset(
-        root_dir=config['data_dir'],
+        root_dir=config['traindata_dir'],
         info_df=train_df,
         transform=train_transform
     )
     val_dataset = CustomDataset(
-        root_dir=config['data_dir'],
+        root_dir=config['traindata_dir'],
         info_df=val_df,
         transform=val_transform
     )

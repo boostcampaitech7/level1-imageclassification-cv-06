@@ -60,13 +60,13 @@ def main():
 
     # 추론에 사용할 Transform을 선언.
     transform_selector = TransformSelector(
-        transform_type=config['transform']['type']
+        transform_type=config['transform']
     )
     test_transform = transform_selector.get_transform(is_train=False)
     
     # 추론에 사용할 Dataset을 선언.
     test_dataset = CustomDataset(
-        root_dir=config['data_dir'],
+        root_dir=config['testdata_dir'],
         info_df=test_info,
         transform=test_transform,
         is_inference=True
@@ -114,7 +114,7 @@ def main():
     test_info = test_info.reset_index().rename(columns={"index": "ID"})
     
     # DataFrame 저장
-    test_info.to_csv('output.csv', index=False)
+    test_info.to_csv(config['csv_path'], index=False)
 
 if __name__ == "__main__":
     main()
