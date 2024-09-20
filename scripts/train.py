@@ -82,12 +82,15 @@ def main():
     train_loader = DataLoader(
         train_dataset,
         batch_size=config['batch_size'],
-        shuffle=True
+        shuffle=True,
+        drop_last=True,
+        num_workers=8
     )
     val_loader = DataLoader(
         val_dataset,
         batch_size=config['batch_size'],
-        shuffle=False
+        shuffle=False,
+        num_workers=8
     )
 
     # 학습에 사용할 Model을 선언.
@@ -101,7 +104,7 @@ def main():
 
     # 선언된 모델을 학습에 사용할 장비로 셋팅.
     model.to(device)
-    print(model)
+    # print(model)
 
     # 학습에 사용할 optimizer를 선언하고, learning rate를 지정
     optimizer = optim.Adam(

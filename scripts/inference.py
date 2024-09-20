@@ -78,7 +78,8 @@ def main():
         test_dataset,
         batch_size=config['batch_size'],
         shuffle=False,
-        drop_last=False
+        drop_last=False,
+        num_workers=8
     )
 
     # 추론에 사용할 장비를 선택.
