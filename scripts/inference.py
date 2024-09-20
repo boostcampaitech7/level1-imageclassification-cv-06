@@ -14,6 +14,7 @@ from torch.utils.data import DataLoader
 
 from src.dataset import CustomDataset
 from src.transforms import TransformSelector
+from src.sketch_transforms import SketchTransformSelector
 from src.models import ModelSelector
 
 

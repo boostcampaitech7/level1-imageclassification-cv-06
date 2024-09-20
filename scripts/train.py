@@ -16,6 +16,7 @@ import random
 
 from src.dataset import CustomDataset
 from src.transforms import TransformSelector
+from src.sketch_transforms import SketchTransformSelector
 from src.models import ModelSelector
 from src.loss import Loss
 from src.trainer import Trainer
@@ -59,7 +60,7 @@ def main():
     )
 
     # 학습에 사용할 Transform을 선언.
-    transform_selector = TransformSelector(
+    transform_selector = SketchTransformSelector(
         transform_type = config['transform']
     )
     train_transform = transform_selector.get_transform(is_train=True)
