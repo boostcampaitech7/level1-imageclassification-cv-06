@@ -60,16 +60,3 @@ class WeightedCrossEntropyLoss(nn.Module):
         return self.loss_fn(outputs, targets)
 
     
-class ContrastiveLoss(nn.Module):
-    def __init__(self, margin=1.0):
-        super(ContrastiveLoss, self).__init__()
-        self.margin = margin
-        self.loss_fn = nn.CrossEntropyLoss()
-
-    def forward(self, output1, output2, targets):
-        # Calculate the Euclidean distance
-        euclidean_distance = F.pairwise_distance(output1, output2)
-        # Contrastive loss formula
-        loss = torch.mean(torch.pow(torch.clamp(self.margin - euclidean_distance, min=0.0), 2))
-        
-        return loss + self.loss_fn(output1, targets)
