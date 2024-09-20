@@ -3,6 +3,7 @@ from typing import Tuple, Callable, Union
 
 import cv2
 import torch
+import numpy as np
 import pandas as pd
 from torch.utils.data import Dataset
 
@@ -39,3 +40,10 @@ class CustomDataset(Dataset):
         else:
             target = self.targets[index]  # 해당 이미지의 레이블
             return image, target  # 변환된 이미지와 레이블을 튜플 형태로 반환합니다.
+
+    def get_original_image(self, index: int) -> np.ndarray:
+        img_path = os.path.join(self.root_dir, self.image_paths[index])
+        image = cv2.imread(img_path, cv2.IMREAD_COLOR)
+        image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+
+        return image
