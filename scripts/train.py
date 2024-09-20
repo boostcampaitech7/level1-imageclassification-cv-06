@@ -11,6 +11,8 @@ from torch.utils.data import DataLoader
 from sklearn.model_selection import train_test_split
 import json
 import pandas as pd
+import random
+import numpy as np
 
 from src.dataset import CustomDataset
 from src.transforms import TransformSelector
@@ -18,6 +20,16 @@ from src.models import ModelSelector
 from src.loss import Loss
 from src.trainer import Trainer
 
+# Random seed 고정 함수
+def set_seed(seed):
+    random.seed(seed)
+    np.random.seed(seed)
+    torch.manual_seed(seed)
+    torch.cuda.manual_seed(seed)
+    torch.backends.cudnn.deterministic = True
+    torch.backends.cudnn.benchmark = False
+# 시드 고정
+set_seed(42)
 
 # 설정 파일 로드
 def load_config(config_path):
