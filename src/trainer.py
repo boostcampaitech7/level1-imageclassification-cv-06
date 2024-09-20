@@ -5,7 +5,7 @@ import torch.nn as nn
 import torch.optim as optim
 from tqdm.auto import tqdm
 from torch.utils.data import DataLoader
-
+from torch.cuda.amp import autocast, GradScaler
 
 class Trainer:
     def __init__(
@@ -56,22 +56,32 @@ class Trainer:
             torch.save(self.model.state_dict(), best_model_path)
             print(f"Save {epoch+1} epoch result. Loss = {loss:.4f}")
 
-    def train_epoch(self) -> float:
+    def train_epoch(self, acculation_steps=4) -> float:
         # 한 에폭 동안의 훈련을 진행
         self.model.train()
         
         total_loss = 0.0
         progress_bar = tqdm(self.train_loader, desc="Training", leave=False)
+        scaler = GradScaler()
         
-        for images, targets in progress_bar:
+        self.optimizer.zero_grad() 
+        
+        for i, (images, targets) in enumerate(progress_bar):
             images, targets = images.to(self.device), targets.to(self.device)
-            self.optimizer.zero_grad()
-            outputs = self.model(images)
-            loss = self.loss_fn(outputs, targets)
-            loss.backward()
-            self.optimizer.step()
-            self.scheduler.step()
-            total_loss += loss.item()
+            
+            with autocast():
+                outputs = self.model(images)
+                loss = self.loss_fn(outputs, targets)
+            loss = loss / acculation_steps 
+            scaler.scale(loss).backward()
+            total_loss += loss.item() 
+            
+            if (i+1) % acculation_steps == 0 or \
+                (i+1) == len(self.train_loader):
+                scaler.step(self.optimizer)
+                scaler.update() 
+                self.optimizer.zero_grad()
+                self.scheduler.step()
             progress_bar.set_postfix(loss=loss.item())
         
         return total_loss / len(self.train_loader)
@@ -90,7 +100,6 @@ class Trainer:
             for images, targets in progress_bar:
                 images, targets = images.to(self.device), targets.to(self.device)
                 outputs = self.model(images)    
-                
                 # validation loss
                 loss = self.loss_fn(outputs, targets)
                 total_loss += loss.item()
