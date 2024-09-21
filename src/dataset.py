@@ -48,10 +48,3 @@ class CustomDataset(Dataset):
         image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
 
         return image
-
-    def get_original_image(self, index: int) -> np.ndarray:
-        img_path = os.path.join(self.root_dir, self.image_paths[index])
-        image = cv2.imread(img_path, cv2.IMREAD_COLOR)
-        image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
-
-        return image
