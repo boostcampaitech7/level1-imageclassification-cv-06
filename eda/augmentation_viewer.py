@@ -6,6 +6,8 @@ import random
 import numpy as np
 import torch
 import json
+import cv2
+from torchcam.methods import GradCAM
 
 
 project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -14,6 +16,7 @@ sys.path.insert(0, project_root)
 from src.transforms import TransformSelector
 from src.sketch_transforms import SketchTransformSelector
 from src.dataset import CustomDataset
+from src.models import ModelSelector
 
 def set_seed(seed):
     random.seed(seed)
@@ -28,6 +31,68 @@ set_seed(42)
 def load_config(config_path):
     with open(config_path, 'r') as f:
         return json.load(f)
+
+@st.cache_resource
+def load_model(config):
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    model_selector = ModelSelector(
+        model_type=config['model']['type'],
+        num_classes=500,
+        model_name=config['model']['name'],
+        pretrained=False
+    )
+    model = model_selector.get_model()
+    model.load_state_dict(torch.load(os.path.join(config['result_path'], "best_model.pt"), map_location=device))
+    model.to(device)
+    model.eval()
+    return model, device
+
+def find_target_layer(model):
+    #모델 구조 확인
+    #print(model)
+    target_layer = 'model.stages.3.blocks.2.conv_dw'  # ConvNeXt V2의 마지막 stage의 마지막 블록의 conv_dw 레이어
+    return target_layer
+
+def generate_gradcam(model, device, image, target_layer):
+    model.eval()
+    model.requires_grad_(True)
+    cam_extractor = GradCAM(model, target_layer)
+    
+    image = image.unsqueeze(0).to(device)
+    image.requires_grad_(True)
+    
+    outputs = model(image)
+    _, pred = torch.max(outputs, 1)
+    
+    cam = cam_extractor(pred.item(), outputs)[0]
+    cam = cam.cpu().detach().numpy()  # detach() 추가
+    cam = np.mean(cam, axis=0)  # 여러 채널이 있는 경우 평균을 취합니다
+    cam = cv2.resize(cam, (image.shape[3], image.shape[2]))
+    cam = (cam - cam.min()) / (cam.max() - cam.min())
+    cam = np.uint8(255 * cam)
+    
+    # cam이 2D 배열인지 확인하고, 그렇지 않으면 2D로 변환
+    if cam.ndim != 2:
+        cam = np.mean(cam, axis=2)
+    
+    cam = cv2.applyColorMap(cam, cv2.COLORMAP_JET)
+    cam = cv2.cvtColor(cam, cv2.COLOR_BGR2RGB)
+    
+    # 입력 이미지 처리
+    input_image = image.squeeze(0).cpu().detach().numpy().transpose((1, 2, 0))  # detach() 추가
+    if input_image.shape[2] == 1:  # 1채널 이미지인 경우
+        input_image = np.squeeze(input_image, axis=2)
+        input_image = np.stack([input_image] * 3, axis=-1)
+    else:  # 3채널 이미지인 경우
+        input_image = (input_image - input_image.min()) / (input_image.max() - input_image.min())
+        input_image = (input_image * 255).astype(np.uint8)
+    
+    # 오버레이 이미지 생성
+    overlay = cam * 0.3 + input_image * 0.5
+    overlay = np.uint8(overlay)
+    
+    model.requires_grad_(False)
+    return overlay
 
 def main():
     st.title("Data Augmentation Viewer")
@@ -97,6 +162,25 @@ def main():
             st.write(f"Shape: {sketch_augmented_image.shape}")
             st.write(f"Min: {sketch_augmented_image.min().item():.4f}, Max: {sketch_augmented_image.max().item():.4f}")
             st.write(f"Mean: {sketch_augmented_image.mean().item():.4f}, Std: {sketch_augmented_image.std().item():.4f}")
+
+    # Grad-CAM 시각화
+    st.subheader("Grad-CAM Visualization")
+    
+    if st.button("Generate Grad-CAM"):
+        with st.spinner("Generating Grad-CAM..."):
+            model, device = load_model(config)
+            target_layer = find_target_layer(model)
+
+            original_overlay = generate_gradcam(model, device, original_augmented, target_layer)
+            sketch_overlay = generate_gradcam(model, device, sketch_augmented, target_layer)
+
+        col1, col2 = st.columns(2)
+        with col1:
+            st.subheader("Original Grad-CAM Overlay")
+            st.image(original_overlay, use_column_width=True)
+        with col2:
+            st.subheader("Sketch Grad-CAM Overlay")
+            st.image(sketch_overlay, use_column_width=True)
 
 if __name__ == "__main__":
     main()
