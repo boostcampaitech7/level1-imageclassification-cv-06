@@ -1,5 +1,4 @@
 import os
-
 import torch
 import torch.nn as nn
 import torch.optim as optim
@@ -21,23 +20,21 @@ class Trainer:
         result_path: str
     ):
         # 클래스 초기화: 모델, 디바이스, 데이터 로더 등 설정
-        self.model = model  # 훈련할 모델
-        self.device = device  # 연산을 수행할 디바이스 (CPU or GPU)
-        self.train_loader = train_loader  # 훈련 데이터 로더
-        self.val_loader = val_loader  # 검증 데이터 로더
-        self.optimizer = optimizer  # 최적화 알고리즘
-        self.scheduler = scheduler # 학습률 스케줄러
-        self.loss_fn = loss_fn  # 손실 함수
-        self.epochs = epochs  # 총 훈련 에폭 수
-        self.result_path = result_path  # 모델 저장 경로
-        self.best_models = [] # 가장 좋은 상위 3개 모델의 정보를 저장할 리스트
-        self.lowest_loss = float('inf') # 가장 낮은 Loss를 저장할 변수
+        self.model = model
+        self.device = device
+        self.train_loader = train_loader
+        self.val_loader = val_loader
+        self.optimizer = optimizer
+        self.scheduler = scheduler
+        self.loss_fn = loss_fn
+        self.epochs = epochs
+        self.result_path = result_path
+        self.best_models = []
+        self.lowest_loss = float('inf')
 
     def save_model(self, epoch, loss):
         # 모델 저장 경로 설정
         os.makedirs(self.result_path, exist_ok=True)
-
-        # 현재 에폭 모델 저장
         current_model_path = os.path.join(self.result_path, f'model_epoch_{epoch}_loss_{loss:.4f}.pt')
         torch.save(self.model.state_dict(), current_model_path)
 
@@ -45,7 +42,7 @@ class Trainer:
         self.best_models.append((loss, epoch, current_model_path))
         self.best_models.sort()
         if len(self.best_models) > 3:
-            _, _, path_to_remove = self.best_models.pop(-1)  # 가장 높은 손실 모델 삭제
+            _, _, path_to_remove = self.best_models.pop(-1)
             if os.path.exists(path_to_remove):
                 os.remove(path_to_remove)
 
@@ -59,32 +56,40 @@ class Trainer:
     def train_epoch(self, acculation_steps=4) -> float:
         # 한 에폭 동안의 훈련을 진행
         self.model.train()
-        
         total_loss = 0.0
+        correct_predictions = 0
+        total_samples = 0
         progress_bar = tqdm(self.train_loader, desc="Training", leave=False)
         scaler = GradScaler()
-        
+
         self.optimizer.zero_grad() 
-        
+
         for i, (images, targets) in enumerate(progress_bar):
             images, targets = images.to(self.device), targets.to(self.device)
             
             with autocast():
                 outputs = self.model(images)
                 loss = self.loss_fn(outputs, targets)
+
             loss = loss / acculation_steps 
             scaler.scale(loss).backward()
             total_loss += loss.item() 
-            
-            if (i+1) % acculation_steps == 0 or \
-                (i+1) == len(self.train_loader):
+
+            # 훈련 정확도 계산
+            _, predicted = torch.max(outputs, 1)
+            correct_predictions += (predicted == targets).sum().item()
+            total_samples += targets.size(0)
+
+            if (i+1) % acculation_steps == 0 or (i+1) == len(self.train_loader):
                 scaler.step(self.optimizer)
                 scaler.update() 
                 self.optimizer.zero_grad()
                 self.scheduler.step()
+                
             progress_bar.set_postfix(loss=loss.item())
-        
-        return total_loss / len(self.train_loader)
+
+        train_accuracy = correct_predictions / total_samples
+        return total_loss / len(self.train_loader), train_accuracy
 
     def validate(self) -> float:
         # 모델의 검증을 진행
@@ -119,9 +124,9 @@ class Trainer:
         for epoch in range(self.epochs):
             print(f"Epoch {epoch+1}/{self.epochs}")
             
-            train_loss = self.train_epoch()
+            train_loss, train_acc = self.train_epoch()  # 훈련 정확도 포함
             val_loss, val_acc = self.validate()
-            print(f"Epoch {epoch+1}, Train Loss: {train_loss:.4f},\n\t Validation Loss: {val_loss:.4f}, Validation Acc: {val_acc:.4f}\n")
+            print(f"Epoch {epoch+1}, Train Loss: {train_loss:.4f}, Train Acc: {train_acc:.4f},\n\t Validation Loss: {val_loss:.4f}, Validation Acc: {val_acc:.4f}\n")
 
             self.save_model(epoch, val_loss)
             self.scheduler.step()
