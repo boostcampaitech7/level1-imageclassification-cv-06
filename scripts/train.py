@@ -26,7 +26,7 @@ def load_config(config_path):
 
 def main():
     # 설정 파일 로드
-    config = load_config('./configs/config.json')
+    config = load_config('../configs/config.json')
 
     # 학습에 사용할 장비를 선택.
     # torch라이브러리에서 gpu를 인식할 경우, cuda로 설정.

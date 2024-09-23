@@ -6,11 +6,11 @@
   "result_path": "./train_result",
   "csv_path": "./output/output.csv",
   "batch_size": 64,
-  "epochs": 5,
+  "epochs": 100,
   "learning_rate": 0.001,
   "model": {
     "type": "timm",
-    "name": "resnet50",
+    "name": "",
     "pretrained": true
   },
   "transform": "albumentations"
