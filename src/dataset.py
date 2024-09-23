@@ -1,6 +1,7 @@
 import os
 from typing import Tuple, Callable, Union
 
+import random
 import cv2
 import torch
 import pandas as pd
@@ -39,3 +40,5 @@ class CustomDataset(Dataset):
         else:
             target = self.targets[index]  # 해당 이미지의 레이블
             return image, target  # 변환된 이미지와 레이블을 튜플 형태로 반환합니다.
+
+
