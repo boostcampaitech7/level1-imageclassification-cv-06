@@ -76,6 +76,28 @@ class TorchvisionModel(nn.Module):
     def forward(self, x):
         return self.model(x)
 
+class StackedModel(nn.Module):
+    def __init__(self, num_classes: int):
+        super(StackedModel, self).__init__()
+        self.convnext = timm.create_model('convnext_large', pretrained=True)
+        self.vit = timm.create_model('vit_base_patch16_224', pretrained=True)
+        self.resnet = timm.create_model('resnet152', pretrained=True)
+
+        self.convnext_output_dim = self.convnext.num_features
+        self.vit_output_dim = self.vit.num_features
+        self.resnet_output_dim = self.resnet.num_features
+
+        self.fc = nn.Linear(self.convnext_output_dim + self.vit_output_dim + self.resnet_output_dim, num_classes)
+
+    def forward(self, x):
+        convnext_out = self.convnext(x)
+        vit_out = self.vit(x)
+        resnet_out = self.resnet(x)
+
+        out = torch.cat((convnext_out, vit_out, resnet_out), dim=1)
+        out = self.fc(out)
+        return out
+
 class ModelSelector:
     """
     사용할 모델 유형을 선택하는 클래스.
@@ -86,7 +108,6 @@ class ModelSelector:
         num_classes: int, 
         **kwargs
     ):
-        
         # 모델 유형에 따라 적절한 모델 객체를 생성
         if model_type == 'simple':
             self.model = SimpleCNN(num_classes=num_classes)
@@ -97,10 +118,14 @@ class ModelSelector:
         elif model_type == 'timm':
             self.model = TimmModel(num_classes=num_classes, **kwargs)
         
+        elif model_type == 'stacked':
+            self.model = StackedModel(num_classes=num_classes)
+        
         else:
             raise ValueError("Unknown model type specified.")
 
     def get_model(self) -> nn.Module:
-
         # 생성된 모델 객체 반환
         return self.model
+    
+
