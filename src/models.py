@@ -127,5 +127,3 @@ class ModelSelector:
     def get_model(self) -> nn.Module:
         # 생성된 모델 객체 반환
         return self.model
-    
-
