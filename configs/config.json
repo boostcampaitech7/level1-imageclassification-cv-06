@@ -3,14 +3,14 @@
   "testdata_dir": "./data/test",
   "train_csv": "./data/train.csv",
   "test_csv": "./data/test.csv",
-  "result_path": "./train_result/coatnet_3_rw_224",
-  "csv_path": "./output/coatnet_3_rw_224/output.csv",
+  "result_path": "./train_result",
+  "csv_path": "./output/output.csv",
   "batch_size": 64,
   "epochs": 5,
   "learning_rate": 0.001,
   "model": {
     "type": "timm",
-    "name": "coatnet_3_rw_224",
+    "name": "convnextv2_large",
     "pretrained": true
   },
   "transform": "albumentations"
