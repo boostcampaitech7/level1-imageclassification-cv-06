@@ -8,9 +8,9 @@ import torch
 import json
 import cv2
 import time
+import pickle
 from torchcam.methods import GradCAM
 from tqdm import tqdm
-from torch.utils.data import Dataset
 
 project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, project_root)
@@ -30,6 +30,14 @@ def set_seed(seed):
     torch.backends.cudnn.benchmark = False
 
 set_seed(42)
+
+# pkl 파일 로드 (이 부분은 파일을 한 번만 로드하도록 스크립트 시작 부분에 위치시키는 것이 좋습니다)
+with open('./eda/class_mapping.pkl', 'rb') as f:
+    label_to_text = pickle.load(f)
+
+# 라벨을 텍스트로 변환하는 함수
+def label_to_text_func(label):
+    return label_to_text.get(label, f"Unknown label: {label}")
 
 def load_config(config_path):
     with open(config_path, 'r') as f:
@@ -314,30 +322,29 @@ def main():
         misclassified = st.session_state.misclassified
         if misclassified:
             st.write(f"Found {len(misclassified)} misclassified {image_type.lower()} images.")
-        
-        # 현재 선택된 인덱스를 session_state에 저장
+            
+            # 현재 선택된 인덱스를 session_state에 저장
             if 'current_misclassified_index' not in st.session_state:
                 st.session_state.current_misclassified_index = 0
 
             # + 와 - 버튼 추가
             col1, col2, col3 = st.columns([1, 3, 1])
             with col1:
-                if st.button("-"):
+                if st.button("➖", key="minus_button", help="Previous image"):
                     st.session_state.current_misclassified_index = max(0, st.session_state.current_misclassified_index - 1)
             with col3:
-                if st.button("+"):
+                if st.button("➕", key="plus_button", help="Next image"):
                     st.session_state.current_misclassified_index = min(len(misclassified) - 1, st.session_state.current_misclassified_index + 1)
 
             with col2:
                 selected_index = st.selectbox("Select a misclassified image:", 
-                                            options=[f"Image {i}: Predicted {pred}, True {true}" 
-                                                    for i, pred, true in misclassified],
+                                            options=range(len(misclassified)),
                                             index=st.session_state.current_misclassified_index,
-                                            format_func=lambda x: x.split(":")[0])
+                                            format_func=lambda i: f"Image {misclassified[i][0]}: Predicted {misclassified[i][1]}, True {misclassified[i][2]}")
             
-            selected_image_index = int(selected_index.split("Image ")[1].split(":")[0])
-            st.session_state.current_misclassified_index = misclassified.index((selected_image_index, *misclassified[st.session_state.current_misclassified_index][1:]))
-            
+            st.session_state.current_misclassified_index = selected_index
+            selected_image_index, pred, true = misclassified[selected_index]
+
             original_image = st.session_state.misclassified_original_images[selected_image_index]
             selected_dataset = st.session_state.misclassified_dataset
             augmented_data = selected_dataset[selected_image_index]
@@ -357,11 +364,8 @@ def main():
                 st.image(augmented_image.permute(1, 2, 0).numpy(), use_column_width=True, clamp=True)
 
             # 예측 결과 표시
-            for i, pred, true in misclassified:
-                if i == selected_image_index:
-                    st.write(f"{image_type} Prediction: {pred}")
-                    st.write(f"True Label: {true}")
-                    break
+            st.write(f"{image_type} Prediction: {label_to_text_func(pred)}")
+            st.write(f"True Label: {label_to_text_func(true)}")
         else:
             st.write(f"No misclassified {image_type.lower()} images found.")
 
