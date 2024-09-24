@@ -17,40 +17,9 @@ sys.path.insert(0, project_root)
 
 from src.transforms import TransformSelector
 from src.sketch_transforms import SketchTransformSelector
-# from src.dataset import CustomDataset
+from src.dataset import CustomDataset
 from src.models import ModelSelector
 
-
-class CustomDataset(Dataset):
-    def __init__(self, root_dir, info_df, transform, is_inference=False):
-        self.root_dir = root_dir
-        self.transform = transform
-        self.is_inference = is_inference
-        self.image_paths = info_df['image_path'].tolist()
-        
-        if not self.is_inference:
-            self.targets = info_df['target'].tolist()
-
-    def __len__(self):
-        return len(self.image_paths)
-
-    def __getitem__(self, index):
-        img_path = os.path.join(self.root_dir, self.image_paths[index])
-        image = cv2.imread(img_path, cv2.IMREAD_COLOR)
-        image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
-        image = self.transform(image)
-
-        if self.is_inference:
-            return image
-        else:
-            target = self.targets[index]
-            return image, target
-
-    def get_original_image(self, index):
-        img_path = os.path.join(self.root_dir, self.image_paths[index])
-        image = cv2.imread(img_path, cv2.IMREAD_COLOR)
-        image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
-        return image
 
 def set_seed(seed):
     random.seed(seed)
@@ -213,48 +182,36 @@ def main():
 
     config = load_config('./configs/config.json')
 
-    dataset_type = st.radio("Select dataset", ["Train", "Test"]) 
-    is_train = dataset_type == "Train"
-
-    csv_path = config['train_csv'] if is_train else config['test_csv']
-    info_df = pd.read_csv(csv_path)
-
-    data_dir = config['traindata_dir'] if is_train else config['testdata_dir']
-
     library_type = st.selectbox("Select transformation library", ["torchvision", "albumentations"])
 
-    original_selector = TransformSelector(library_type)
-    sketch_selector = SketchTransformSelector(library_type)
+    all_datasets = load_all_datasets(config, library_type)
 
-    original_transform = original_selector.get_transform(is_train=is_train)
-    sketch_transform = sketch_selector.get_transform(is_train=is_train)
-
-    original_dataset = CustomDataset(data_dir, info_df, original_transform, is_inference=not is_train)
-    sketch_dataset = CustomDataset(data_dir, info_df, sketch_transform, is_inference=not is_train)
+    dataset_type = st.radio("Select dataset", ["Train", "Test"]) 
     
-    # st.title("Data Augmentation Viewer")
+    if 'original_dataset' not in st.session_state:
+        st.session_state.original_dataset = {}
+    if 'sketch_dataset' not in st.session_state:
+        st.session_state.sketch_dataset = {}
+    if 'info_df' not in st.session_state:
+        st.session_state.info_df = {}
 
-    # config = load_config('./configs/config.json')
+    st.session_state.original_dataset[dataset_type.lower()] = all_datasets[dataset_type.lower()]['original']
+    st.session_state.sketch_dataset[dataset_type.lower()] = all_datasets[dataset_type.lower()]['sketch']
+    st.session_state.info_df[dataset_type.lower()] = all_datasets[dataset_type.lower()]['info_df']
 
-    # library_type = st.selectbox("Select transformation library", ["torchvision", "albumentations"])
+    original_dataset = st.session_state.original_dataset[dataset_type.lower()]
+    sketch_dataset = st.session_state.sketch_dataset[dataset_type.lower()]
+    info_df = st.session_state.info_df[dataset_type.lower()]
 
-    # all_datasets = load_all_datasets(config, library_type)
+    is_train = dataset_type == "Train"
 
-    # dataset_type = st.radio("Select dataset", ["Train", "Test"]) 
-    
-    # original_dataset = all_datasets[dataset_type.lower()]['original']
-    # sketch_dataset = all_datasets[dataset_type.lower()]['sketch']
-    # info_df = all_datasets[dataset_type.lower()]['info_df']
+    col1, col2 = st.columns([3, 1])
+    with col1:
+        image_index = st.slider("Select image index", 0, len(original_dataset) - 1, 0)
+    with col2:
+        image_index = st.number_input("Or enter index", min_value=0, max_value=len(original_dataset) - 1, value=image_index, step=1)
 
-    # is_train = dataset_type == "Train"
-
-    # col1, col2 = st.columns([3, 1])
-    # with col1:
-    #     image_index = st.slider("Select image index", 0, len(original_dataset) - 1, 0)
-    # with col2:
-    #     image_index = st.number_input("Or enter index", min_value=0, max_value=len(original_dataset) - 1, value=image_index, step=1)
-
-    # original_image = original_dataset.get_original_image(image_index)
+    original_image = original_dataset.get_original_image(image_index)
 
     # 첫 번째 줄: 원본 이미지와 원본 변환 이미지
     col1, col2 = st.columns(2)
@@ -329,11 +286,13 @@ def main():
 
     # 잘못 분류된 이미지 시각화
     st.subheader("Misclassified Images")
-    
+
     image_type = st.radio("Select image type for misclassification analysis:", ("Original", "Sketch"))
-    
+
     if 'misclassified' not in st.session_state:
         st.session_state.misclassified = None
+        st.session_state.misclassified_dataset = None
+        st.session_state.misclassified_original_images = None
 
     if st.button("Find Misclassified Images"):
         if not st.session_state.model_loaded:
@@ -344,19 +303,39 @@ def main():
                 device = st.session_state.device
                 dataset = original_dataset if image_type == "Original" else sketch_dataset
                 st.session_state.misclassified = cached_get_misclassified_images(model, device, dataset, info_df, image_type.lower())
+                st.session_state.misclassified_dataset = dataset  # 오분류된 이미지 데이터셋을 저장
+                
+                # 오분류된 이미지의 original 이미지도 저장
+                st.session_state.misclassified_original_images = {
+                    i: original_dataset.get_original_image(i) for i, _, _ in st.session_state.misclassified
+                }
 
     if st.session_state.misclassified is not None:
         misclassified = st.session_state.misclassified
         if misclassified:
             st.write(f"Found {len(misclassified)} misclassified {image_type.lower()} images.")
-            selected_index = st.selectbox("Select a misclassified image:", 
-                                          options=[f"Image {i}: Predicted {pred}, True {true}" 
-                                                   for i, pred, true in misclassified],
-                                          format_func=lambda x: x.split(":")[0])
             
-            selected_image_index = int(selected_index.split("Image ")[1].split(":")[0])
-            original_image = original_dataset.get_original_image(selected_image_index)
-            selected_dataset = original_dataset if image_type == "Original" else sketch_dataset
+            col1, col2 = st.columns([3, 1])
+            with col1:
+                selected_index = st.selectbox("Select a misclassified image:", 
+                                            options=[f"Image {i}: Predicted {pred}, True {true}" 
+                                                    for i, pred, true in misclassified],
+                                            format_func=lambda x: x.split(":")[0])
+                selected_image_index = int(selected_index.split("Image ")[1].split(":")[0])
+            
+            with col2:
+                number_input_index = st.number_input("Or enter index", 
+                                                    min_value=0, 
+                                                    max_value=len(misclassified)-1, 
+                                                    value=selected_image_index,
+                                                    step=1)
+                
+            # number_input이 변경되면 selected_image_index를 업데이트
+            if number_input_index != selected_image_index:
+                selected_image_index = number_input_index
+
+            original_image = st.session_state.misclassified_original_images[selected_image_index]
+            selected_dataset = st.session_state.misclassified_dataset
             augmented_data = selected_dataset[selected_image_index]
 
             # 데이터셋이 (이미지, 레이블) 튜플을 반환하는 경우 처리
@@ -381,12 +360,6 @@ def main():
                     break
         else:
             st.write(f"No misclassified {image_type.lower()} images found.")
-
-    # 모델 로드 상태 표시
-    if st.session_state.model_loaded:
-        st.sidebar.success("Model is loaded and ready to use.")
-    else:
-        st.sidebar.warning("Model is not loaded. Please load the model to use Grad-CAM and misclassification detection.")
 
 if __name__ == "__main__":
     main()
