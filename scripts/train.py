@@ -20,6 +20,16 @@ from src.models import ModelSelector
 from src.loss import Loss
 from src.trainer import Trainer
 
+# Random seed 고정 함수
+def set_seed(seed):
+    random.seed(seed)
+    np.random.seed(seed)
+    torch.manual_seed(seed)
+    torch.cuda.manual_seed(seed)
+    torch.backends.cudnn.deterministic = True
+    torch.backends.cudnn.benchmark = False
+# 시드 고정
+set_seed(42)
 
 def set_seed(seed):
     random.seed(seed)
@@ -81,12 +91,15 @@ def main():
     train_loader = DataLoader(
         train_dataset,
         batch_size=config['batch_size'],
-        shuffle=True
+        shuffle=True,
+        drop_last=True,
+        num_workers=8
     )
     val_loader = DataLoader(
         val_dataset,
         batch_size=config['batch_size'],
-        shuffle=False
+        shuffle=False,
+        num_workers=8
     )
 
     # 학습에 사용할 Model을 선언.
@@ -100,7 +113,7 @@ def main():
 
     # 선언된 모델을 학습에 사용할 장비로 셋팅.
     model.to(device)
-    print(model)
+    # print(model)
 
     # 학습에 사용할 optimizer를 선언하고, learning rate를 지정
     optimizer = optim.Adam(
