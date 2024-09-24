@@ -314,26 +314,30 @@ def main():
         misclassified = st.session_state.misclassified
         if misclassified:
             st.write(f"Found {len(misclassified)} misclassified {image_type.lower()} images.")
-            
-            col1, col2 = st.columns([3, 1])
+        
+        # 현재 선택된 인덱스를 session_state에 저장
+            if 'current_misclassified_index' not in st.session_state:
+                st.session_state.current_misclassified_index = 0
+
+            # + 와 - 버튼 추가
+            col1, col2, col3 = st.columns([1, 3, 1])
             with col1:
+                if st.button("-"):
+                    st.session_state.current_misclassified_index = max(0, st.session_state.current_misclassified_index - 1)
+            with col3:
+                if st.button("+"):
+                    st.session_state.current_misclassified_index = min(len(misclassified) - 1, st.session_state.current_misclassified_index + 1)
+
+            with col2:
                 selected_index = st.selectbox("Select a misclassified image:", 
                                             options=[f"Image {i}: Predicted {pred}, True {true}" 
                                                     for i, pred, true in misclassified],
+                                            index=st.session_state.current_misclassified_index,
                                             format_func=lambda x: x.split(":")[0])
-                selected_image_index = int(selected_index.split("Image ")[1].split(":")[0])
             
-            with col2:
-                number_input_index = st.number_input("Or enter index", 
-                                                    min_value=0, 
-                                                    max_value=len(misclassified)-1, 
-                                                    value=selected_image_index,
-                                                    step=1)
-                
-            # number_input이 변경되면 selected_image_index를 업데이트
-            if number_input_index != selected_image_index:
-                selected_image_index = number_input_index
-
+            selected_image_index = int(selected_index.split("Image ")[1].split(":")[0])
+            st.session_state.current_misclassified_index = misclassified.index((selected_image_index, *misclassified[st.session_state.current_misclassified_index][1:]))
+            
             original_image = st.session_state.misclassified_original_images[selected_image_index]
             selected_dataset = st.session_state.misclassified_dataset
             augmented_data = selected_dataset[selected_image_index]
