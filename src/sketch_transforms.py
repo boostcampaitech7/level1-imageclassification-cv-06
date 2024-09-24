@@ -35,9 +35,12 @@ class SketchAlbumentationsTransform:
     def __init__(self, is_train: bool = True):
         # 공통 변환 설정
         common_transforms = [
-            A.SmallestMaxSize(max_size=224),
-            A.PadIfNeeded(min_height=224, min_width=224, border_mode=0, value=(255, 255, 255)),
+            # A.LongestMaxSize(max_size=224),  # 가장 긴 변의 크기를 224로 조정
+            # A.PadIfNeeded(min_height=224, min_width=224, border_mode=0, value=(255, 255, 255)),  # 필요한 경우 패딩 추가
+            # A.CenterCrop(height=224, width=224),  # 중앙에서 224x224 크기로 자르기
             A.Resize(224, 224),
+            # A.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),  # 정규화
+            A.Normalize(mean=(0.5, 0.5, 0.5), std=(0.5, 0.5, 0.5)),  # Min-Max 정규화
             ToTensorV2(),
         ]
         
@@ -45,8 +48,8 @@ class SketchAlbumentationsTransform:
             # 훈련용 변환
             self.transform = A.Compose(
                 [
-                    A.HorizontalFlip(p=0.5),
-                    # A.VerticalFlip(p=0.1),
+                    A.HorizontalFlip(p=0.7),
+                    A.VerticalFlip(p=0.3),
                     # A.Rotate(limit=5, p=0.5),
                     A.Rotate(limit=15),  # 최대 15도 회전
                     A.RandomBrightnessContrast(p=0.2),
@@ -73,7 +76,7 @@ class SketchAlbumentationsTransform:
         # 이미지에 변환 적용 및 결과 반환
         transformed = self.transform(image=image)
         
-        return transformed['image'] / 255.0  # 0-1 스케일링
+        return transformed['image']
 
 class SketchTransformSelector:
     def __init__(self, transform_type: str):
