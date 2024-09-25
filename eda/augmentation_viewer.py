@@ -364,7 +364,7 @@ def main():
                 st.image(augmented_image.permute(1, 2, 0).numpy(), use_column_width=True, clamp=True)
 
             # 예측 결과 표시
-            st.write(f"{image_type} Prediction: {label_to_text_func(pred)}")
+            st.write(f"Model Prediction: {label_to_text_func(pred)}")
             st.write(f"True Label: {label_to_text_func(true)}")
         else:
             st.write(f"No misclassified {image_type.lower()} images found.")
