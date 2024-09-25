@@ -1,9 +1,11 @@
 import torch
 import numpy as np
+import albumentations as A
 from PIL import Image
 from torchvision import transforms
+from torchvision.transforms import InterpolationMode
 from albumentations.pytorch import ToTensorV2
-import albumentations as A
+
 
 class SketchTorchvisionTransform:
     def __init__(self, is_train: bool = True):
@@ -11,16 +13,27 @@ class SketchTorchvisionTransform:
         common_transforms = [
             transforms.Resize((224, 224)),
             transforms.ToTensor(),
-            transforms.Lambda(lambda x: x)  # 이미 0-1 범위이므로 추가 스케일링 불필요
+            # transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])  # 정규화
+            transforms.Normalize(mean=[0.5, 0.5, 0.5], std=[0.5, 0.5, 0.5])  # Min-Max 정규화
         ]
         
         if is_train:
             # 훈련용 변환: 랜덤 수평 뒤집기, 랜덤 회전, 색상 조정 추가
             self.transform = transforms.Compose(
                 [
-                    transforms.RandomHorizontalFlip(p=0.5),
-                    transforms.RandomRotation(15),
-                    transforms.ColorJitter(brightness=0.2, contrast=0.2),
+                    transforms.RandomHorizontalFlip(p=0.7),
+                    transforms.RandomVerticalFlip(p=0.3),
+                    transforms.AugMix(
+                        severity=3,
+                        mixture_width=2,
+                        chain_depth=-1,
+                        alpha=0.5,
+                        all_ops=False,
+                        interpolation=InterpolationMode.BILINEAR,
+                        fill=255
+                    ),
+                    # transforms.RandomRotation(15),
+                    # transforms.ColorJitter(brightness=0.2, contrast=0.2),
                 ] + common_transforms
             )
         else:
