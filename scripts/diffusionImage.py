@@ -122,8 +122,14 @@ train_info['converted_image_path'] = ""
 new_train_info = train_info.copy()
 new_train_info['converted_image_path'] = ""
 
+pin = 1
 # 스케치 이미지를 변환하여 저장하고 경로를 CSV에 업데이트
 for i, row in train_info.iterrows():
+    if row['image_path'] == "n01774384/sketch_10.JPEG":
+        pin = 0 
+    if pin:
+        continue
+    
     class_name = row['class_name']  # 클래스 이름
     input_image_path = os.path.join(config['sketch_data_dir'], row['image_path'])
     
