@@ -4,7 +4,7 @@
   "train_csv": "../data/train.csv",
   "test_csv": "../data/test.csv",
   "result_path": "./train_result/Random_Augment",
-  "csv_path": "./output//Random_Augment/output.csv",
+  "csv_path": "./output//Random_Augment/output2.csv",
   "batch_size": 64,
   "epochs": 20,
   "learning_rate": 0.0001,

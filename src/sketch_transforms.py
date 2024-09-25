@@ -9,7 +9,7 @@ from torchvision.transforms import AugMix  # AugMix 임포트
 from torchvision.transforms import RandAugment  # RandAugment 임포트
 
 class SketchTorchvisionTransform:
-    def init(self, is_train: bool = True):
+    def __init__(self, is_train: bool = True):  # 수정: __init__으로 변경
         # 공통 변환 설정: 이미지 리사이즈, 텐서 변환, 0-1 스케일링
         common_transforms = [
             transforms.Resize((224, 224)),
@@ -25,7 +25,7 @@ class SketchTorchvisionTransform:
                     transforms.RandomHorizontalFlip(p=0.7),
                     transforms.RandomVerticalFlip(p=0.3),  # 수직 뒤집기 추가
                     transforms.RandomRotation(15),  # 랜덤 회전 추가
-                    # RandAugment(num_ops=2, magnitude=9),  # RandAugment 초기화
+                    RandAugment(num_ops=2, magnitude=9),  # RandAugment 초기화
                     transforms.AugMix(
                         severity=3,
                         mixture_width=2,
@@ -94,14 +94,25 @@ class SketchAlbumentationsTransform:
         return transformed['image']
 
 class SketchTransformSelector:
+    """
+    이미지 변환 라이브러리를 선택하기 위한 클래스.
+    """
     def __init__(self, transform_type: str):
+
+        # 지원하는 변환 라이브러리인지 확인
         if transform_type in ["torchvision", "albumentations"]:
             self.transform_type = transform_type
+        
         else:
             raise ValueError("Unknown transformation library specified.")
 
     def get_transform(self, is_train: bool):
+        
+        # 선택된 라이브러리에 따라 적절한 변환 객체를 생성
         if self.transform_type == 'torchvision':
-            return SketchTorchvisionTransform(is_train=is_train)
+            transform = SketchTorchvisionTransform(is_train=is_train)
+        
         elif self.transform_type == 'albumentations':
-            return SketchAlbumentationsTransform(is_train=is_train)
+            transform = SketchAlbumentationsTransform(is_train=is_train)
+        
+        return transform
