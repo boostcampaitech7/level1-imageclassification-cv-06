@@ -21,17 +21,8 @@ from src.models import ModelSelector
 from src.loss import Loss
 from src.trainer import Trainer
 
-# Random seed 고정 함수
-def set_seed(seed):
-    random.seed(seed)
-    np.random.seed(seed)
-    torch.manual_seed(seed)
-    torch.cuda.manual_seed(seed)
-    torch.backends.cudnn.deterministic = True
-    torch.backends.cudnn.benchmark = False
-# 시드 고정
-set_seed(42)
 
+# Random seed 고정 함수
 def set_seed(seed):
     random.seed(seed)
     np.random.seed(seed)
@@ -119,7 +110,8 @@ def main():
     # 학습에 사용할 optimizer를 선언하고, learning rate를 지정
     optimizer = optim.Adam(
         model.parameters(),
-        lr=config['learning_rate']
+        lr=config['learning_rate'],
+        weight_decay=0.000005
     )
 
     # 스케줄러 초기화
