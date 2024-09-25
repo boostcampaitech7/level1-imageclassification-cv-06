@@ -1,4 +1,4 @@
-# Boostcamp AI Tech 7 CV 06
+ # Boostcamp AI Tech 7 CV 06
  
 ## Level1 Sketch Image Classification Project
 
@@ -7,6 +7,12 @@ This project implements an image classification model using PyTorch and timm.
 ## Project Structure
 
 - `data/`: Contains train and test data
+- `eda/` : Code related to EDA
+  - `augmentation_viewer.py`: Streamlit code for EDA  
+(Augmentation visualization,  
+GradCAM,  
+Misclassification analysis)
+  - `class_mapping.pkl`: PKL file for mapping class label onto text
 - `src/`: Source code for the project
   - `dataset.py`: CustomDataset class
   - `transforms.py`: Data transformations
