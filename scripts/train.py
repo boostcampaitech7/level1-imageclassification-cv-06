@@ -17,6 +17,7 @@ import random
 from src.dataset import CustomDataset
 from src.transforms import TransformSelector
 from src.sketch_transforms import SketchTransformSelector
+from src.Uni_Aug_transforms import UniformTransformSelector
 from src.models import ModelSelector
 from src.loss import Loss
 from src.trainer import Trainer
@@ -68,7 +69,7 @@ def main():
         test_size=0.2,
         stratify=train_info['target']
     )
-
+    
     # 학습에 사용할 Transform을 선언.
     transform_selector = SketchTransformSelector(
         transform_type = config['transform']
@@ -119,7 +120,8 @@ def main():
     # 학습에 사용할 optimizer를 선언하고, learning rate를 지정
     optimizer = optim.Adam(
         model.parameters(),
-        lr=config['learning_rate']
+        lr=config['learning_rate'],
+        weight_decay = 0.000005
     )
 
     # 스케줄러 초기화

@@ -1,10 +1,10 @@
 {
-  "traindata_dir": "./data/train",
-  "testdata_dir": "./data/test",
-  "train_csv": "./data/train.csv",
-  "test_csv": "./data/test.csv",
-  "result_path": "./train_result",
-  "csv_path": "./output/output.csv",
+  "traindata_dir": "../data/train",
+  "testdata_dir": "../data/test",
+  "train_csv": "../data/train.csv",
+  "test_csv": "../data/test.csv",
+  "result_path": "./train_result/Random_Augment",
+  "csv_path": "./output//Random_Augment/output.csv",
   "batch_size": 64,
   "epochs": 20,
   "learning_rate": 0.0001,
@@ -13,5 +13,5 @@
     "name": "convnextv2_large",
     "pretrained": true
   },
-  "transform": "albumentations"
+  "transform": "torchvision"
 }
