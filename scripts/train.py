@@ -81,10 +81,9 @@ def main():
 
     # 학습에 사용할 Model을 선언.
     model_selector = ModelSelector(
-        model_type=config['model']['type'],
+        model_type='stacked',  # 'stacked'로 변경
         num_classes=num_classes,
-        model_name=config['model']['name'],
-        pretrained=config['model']['pretrained']
+        pretrained=config['model']['pretrained']  # pretrained 인자 추가
     )
     model = model_selector.get_model()
 

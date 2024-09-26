@@ -9,8 +9,8 @@
   "epochs": 100,
   "learning_rate": 0.001,
   "model": {
-    "type": "timm",
-    "name": "",
+    "type": "stacked",
+    "stacked_models": ["convnext_large", "vit_base_patch16_224", "resnet152"],
     "pretrained": true
   },
   "transform": "albumentations"

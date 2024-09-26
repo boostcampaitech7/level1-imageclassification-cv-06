@@ -77,25 +77,29 @@ class TorchvisionModel(nn.Module):
         return self.model(x)
 
 class StackedModel(nn.Module):
-    def __init__(self, num_classes: int):
+    def __init__(self):
         super(StackedModel, self).__init__()
-        self.convnext = timm.create_model('convnext_large', pretrained=True)
-        self.vit = timm.create_model('vit_base_patch16_224', pretrained=True)
-        self.resnet = timm.create_model('resnet152', pretrained=True)
+        # 각 모델을 초기화합니다.
+        self.model1 = timm.create_model('convnext_large', pretrained=True)  
+        self.model2 = timm.create_model('vit_base_patch16_224', pretrained=True)  
+        self.model3 = timm.create_model('resnet152', pretrained=True)  
 
-        self.convnext_output_dim = self.convnext.num_features
-        self.vit_output_dim = self.vit.num_features
-        self.resnet_output_dim = self.resnet.num_features
+        # 각 모델의 출력 차원
+        self.convnext_output_dim = 1000
+        self.vit_output_dim = 1000
+        self.resnet_output_dim = 1000
 
-        self.fc = nn.Linear(self.convnext_output_dim + self.vit_output_dim + self.resnet_output_dim, num_classes)
+        # 최종 출력층
+        self.fc = nn.Linear(self.convnext_output_dim + self.vit_output_dim + self.resnet_output_dim, 500)  # 예: 500 클래스 분류
 
     def forward(self, x):
-        convnext_out = self.convnext(x)
-        vit_out = self.vit(x)
-        resnet_out = self.resnet(x)
+        model1_out = self.model1(x)  # convnext 모델의 출력
+        model2_out = self.model2(x)  # vit 모델의 출력
+        model3_out = self.model3(x)  # resnet 모델의 출력
 
-        out = torch.cat((convnext_out, vit_out, resnet_out), dim=1)
-        out = self.fc(out)
+        # 모델 출력 연결
+        out = torch.cat((model1_out, model2_out, model3_out), dim=1)
+        out = self.fc(out)  # 최종 출력
         return out
 
 class ModelSelector:
