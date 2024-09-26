@@ -11,8 +11,8 @@ from torch.utils.data import DataLoader
 from sklearn.model_selection import train_test_split
 import json
 import pandas as pd
-import random
 import numpy as np
+import random
 
 from src.dataset import CustomDataset
 from src.transforms import TransformSelector
@@ -57,6 +57,7 @@ def main():
         stratify=train_info['target']
     )
     
+    # diffusin model Data 추가
     converted_train_df = pd.read_csv(config['converted_train_csv'])
     train_df = pd.concat([train_df, converted_train_df])
     
