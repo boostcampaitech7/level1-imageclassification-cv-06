@@ -227,6 +227,7 @@ def main():
     with col1:
         st.subheader("Original Image")
         st.image(original_image, use_column_width=True)
+        st.write(f"Shape: {original_image.shape}")
 
     with col2:
         st.subheader("Original Transform")
@@ -238,8 +239,8 @@ def main():
         original_augmented_image = original_augmented.permute(1, 2, 0).numpy()
         st.image(original_augmented_image, use_column_width=True, clamp=True)
         st.write(f"Shape: {original_augmented_image.shape}")
-        st.write(f"Min: {original_augmented_image.min().item():.4f}, Max: {original_augmented_image.max().item():.4f}")
-        st.write(f"Mean: {original_augmented_image.mean().item():.4f}, Std: {original_augmented_image.std().item():.4f}")
+        # st.write(f"Min: {original_augmented_image.min().item():.4f}, Max: {original_augmented_image.max().item():.4f}")
+        # st.write(f"Mean: {original_augmented_image.mean().item():.4f}, Std: {original_augmented_image.std().item():.4f}")
 
     # 두 번째 줄: 스케치 변환 이미지 3장
     st.subheader("Sketch Transforms")
@@ -254,9 +255,9 @@ def main():
             
             sketch_augmented_image = sketch_augmented.permute(1, 2, 0).numpy()
             st.image(sketch_augmented_image, use_column_width=True, clamp=True)
-            st.write(f"Shape: {sketch_augmented_image.shape}")
-            st.write(f"Min: {sketch_augmented_image.min().item():.4f}, Max: {sketch_augmented_image.max().item():.4f}")
-            st.write(f"Mean: {sketch_augmented_image.mean().item():.4f}, Std: {sketch_augmented_image.std().item():.4f}")
+            # st.write(f"Shape: {sketch_augmented_image.shape}")
+            # st.write(f"Min: {sketch_augmented_image.min().item():.4f}, Max: {sketch_augmented_image.max().item():.4f}")
+            # st.write(f"Mean: {sketch_augmented_image.mean().item():.4f}, Std: {sketch_augmented_image.std().item():.4f}")
 
     if 'model_loaded' not in st.session_state:
         st.session_state.model_loaded = False
