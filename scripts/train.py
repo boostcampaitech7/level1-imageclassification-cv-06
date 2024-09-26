@@ -13,6 +13,7 @@ import json
 import pandas as pd
 import numpy as np
 import random
+import optuna  # Optuna 임포트 추가
 
 from src.dataset import CustomDataset
 from src.transforms import TransformSelector
@@ -33,28 +34,20 @@ def set_seed(seed):
 # 시드 고정
 set_seed(42)
 
-def set_seed(seed):
-    random.seed(seed)
-    np.random.seed(seed)
-    torch.manual_seed(seed)
-    torch.cuda.manual_seed(seed)
-    torch.backends.cudnn.deterministic = True
-    torch.backends.cudnn.benchmark = False
-
-# 시드 고정
-set_seed(42)
-
 # 설정 파일 로드
 def load_config(config_path):
     with open(config_path, 'r') as f:
         return json.load(f)
 
-def main():
+def objective(trial):
+    # 하이퍼파라미터 정의
+    learning_rate = trial.suggest_loguniform('learning_rate', 1e-5, 1e-1)  # 0.00001 ~ 0.1
+    weight_decay = trial.suggest_loguniform('weight_decay', 1e-5, 1e-2)  # 0.00001 ~ 0.01
+
     # 설정 파일 로드
     config = load_config('./configs/config.json')
 
     # 학습에 사용할 장비를 선택.
-    # torch라이브러리에서 gpu를 인식할 경우, cuda로 설정.
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
     # 학습 데이터의 class, image path, target에 대한 정보가 들어있는 csv파일을 읽기.
@@ -69,10 +62,14 @@ def main():
         test_size=0.2,
         stratify=train_info['target']
     )
-    
+
+    # diffusin model Data 추가
+    converted_train_df = pd.read_csv(config['converted_train_csv'])
+    train_df = pd.concat([train_df, converted_train_df])
+
     # 학습에 사용할 Transform을 선언.
     transform_selector = SketchTransformSelector(
-        transform_type = config['transform']
+        transform_type=config['transform']
     )
     train_transform = transform_selector.get_transform(is_train=True)
     val_transform = transform_selector.get_transform(is_train=False)
@@ -115,13 +112,12 @@ def main():
 
     # 선언된 모델을 학습에 사용할 장비로 셋팅.
     model.to(device)
-    # print(model)
 
     # 학습에 사용할 optimizer를 선언하고, learning rate를 지정
     optimizer = optim.Adam(
         model.parameters(),
-        lr=config['learning_rate'],
-        weight_decay = 0.000005
+        lr=learning_rate,  # Optuna에서 튜닝한 learning rate 사용
+        weight_decay=weight_decay  # Optuna에서 튜닝한 weight decay 사용
     )
 
     # 스케줄러 초기화
@@ -158,6 +154,19 @@ def main():
 
     # 모델 학습.
     trainer.train()
+
+    # 검증 정확도 반환 (최적화 목표)
+    _, val_accuracy = trainer.validate()  # validate 메서드가 검증 손실과 정확도를 반환한다고 가정
+
+    return val_accuracy  # 정확도를 반환
+
+def main():
+    # Optuna 스터디 생성
+    study = optuna.create_study(direction='maximize')  # 정확도 최대화
+    study.optimize(objective, n_trials=3)  # 3번의 시도
+
+    # 최적의 하이퍼파라미터 출력
+    print("Best hyperparameters: ", study.best_params)
 
 if __name__ == "__main__":
     main()
