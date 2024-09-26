@@ -58,8 +58,9 @@ def main():
     )
     
     # diffusin model Data 추가
-    converted_train_df = pd.read_csv(config['converted_train_csv'])
-    train_df = pd.concat([train_df, converted_train_df])
+    if config['diffusion_aug'] == True:
+        converted_train_df = pd.read_csv(config['converted_train_csv'])
+        train_df = pd.concat([converted_train_df, train_df])
     
     # 학습에 사용할 Transform을 선언.
     transform_selector = TransformSelector(
