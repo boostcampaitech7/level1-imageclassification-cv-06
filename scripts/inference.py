@@ -14,6 +14,7 @@ from torch.utils.data import DataLoader
 
 from src.dataset import CustomDataset
 from src.transforms import TransformSelector
+from src.sketch_transforms import SketchTransformSelector
 from src.models import ModelSelector
 
 
@@ -59,7 +60,7 @@ def main():
     num_classes = 500
 
     # 추론에 사용할 Transform을 선언.
-    transform_selector = TransformSelector(
+    transform_selector = SketchTransformSelector(
         transform_type=config['transform']
     )
     test_transform = transform_selector.get_transform(is_train=False)
