@@ -2,6 +2,7 @@
   "traindata_dir": "./data/train",
   "testdata_dir": "./data/test",
   "train_csv": "./data/train.csv",
+  "converted_train_csv": "./data/converted_train.csv",
   "test_csv": "./data/test.csv",
   "result_path": "./train_result",
   "csv_path": "./output/output.csv",
@@ -13,5 +14,6 @@
     "name": "convnextv2_large",
     "pretrained": true
   },
-  "transform": "torchvision"
+  "transform": "torchvision",
+  "diffusion_aug": true
 }

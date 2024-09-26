@@ -1,8 +1,28 @@
 import os
+import sys 
+# 프로젝트 루트 디렉토리를 Python 경로에 추가
+project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+sys.path.insert(0, project_root)
+
 import pandas as pd
 from PIL import Image
 import torch
 from diffusers import StableDiffusionPipeline, StableDiffusionImg2ImgPipeline
+from src.transforms import TransformSelector
+import torchvision.transforms as transforms
+
+import random
+import numpy as np 
+# Random seed 고정 함수
+def set_seed(seed):
+    random.seed(seed)
+    np.random.seed(seed)
+    torch.manual_seed(seed)
+    torch.cuda.manual_seed(seed)
+    torch.backends.cudnn.deterministic = True
+    torch.backends.cudnn.benchmark = False
+# 시드 고정
+set_seed(42)
 
 # 매핑 파일을 로드하여 클래스 ID와 설명의 사전을 반환합니다.
 def load_mapping(mapping_file):
@@ -19,8 +39,9 @@ def load_mapping(mapping_file):
                 mapping[class_id] = description
     return mapping
 
-# 설정 로드
+# 설정 로드 (유용하다 생각되면 config에 추가)
 config = {
+    # 기존 설정 값 
     "train_csv": "./data/train.csv",
     "test_csv": "./data/test.csv",
     "result_path": "./train_result",
@@ -33,6 +54,8 @@ config = {
         "pretrained": True
     },
     "transform": "torchvision",
+    
+    # 추가된 설정 값
     "sketch_data_dir": "./data/train",
     "converted_data_dir": "./data/converted_images",
     "new_train_csv": "./data/new_train.csv",  # 새 CSV 파일 경로
@@ -41,9 +64,21 @@ config = {
 
 # Stable Diffusion 모델 초기화
 device = "cuda" if torch.cuda.is_available() else "cpu"
-pipe = StableDiffusionPipeline.from_pretrained("CompVis/stable-diffusion-v1-4").to(device)
 
-def convert_sketch_to_image(input_image_path, output_image_path, prompt="Make the input sketch image more realistic"):
+preprocess = transforms.Compose([
+    # transforms.Resize((224, 224)),
+    transforms.ToTensor(),
+    transforms.Normalize(mean=[0.5, 0.5, 0.5], std=[0.5, 0.5, 0.5])
+])
+
+# 파이프라인  
+# 텍스트 -> 이미지 
+# pipe = StableDiffusionPipeline.from_pretrained("CompVis/stable-diffusion-v1-4").to(device)
+# 이미지 -> 이미지 
+pipe = StableDiffusionImg2ImgPipeline.from_pretrained("CompVis/stable-diffusion-v1-4").to(device)
+
+def convert_sketch_to_image(input_image_path, output_image_path, 
+                            prompt="Make the input sketch image more realistic"):
     """
     스케치 이미지를 Stable Diffusion으로 변환하고 결과를 저장합니다.
     :param input_image_path: 스케치 이미지 경로
@@ -51,12 +86,19 @@ def convert_sketch_to_image(input_image_path, output_image_path, prompt="Make th
     :param prompt: 이미지 변환을 위한 프롬프트
     """
     # 스케치 이미지 로드
+    prompt = prompt+" A refined sketch with subtle line enhancements, maintaining the original composition and preserving the hand-drawn aesthetic. No major distortions, just improved clarity and definition of the original lines."
+    denoising_strength = 0.4
     sketch_image = Image.open(input_image_path).convert("RGB")
-
+    guidance_scale = 6
+    sketch_image= preprocess(sketch_image) 
+    
     # 이미지 변환 수행
     with torch.no_grad():
         result_image = pipe(prompt=prompt, 
-                            num_inference_steps=20,
+                            # num_inference_steps=10,
+                            image=sketch_image,
+                            strength=denoising_strength, 
+                            guidance_scale=guidance_scale
                             ).images[0]
 
     # 변환된 이미지 저장
@@ -80,8 +122,14 @@ train_info['converted_image_path'] = ""
 new_train_info = train_info.copy()
 new_train_info['converted_image_path'] = ""
 
+pin = 1
 # 스케치 이미지를 변환하여 저장하고 경로를 CSV에 업데이트
 for i, row in train_info.iterrows():
+    if row['image_path'] == "n01774384/sketch_10.JPEG":
+        pin = 0 
+    if pin:
+        continue
+    
     class_name = row['class_name']  # 클래스 이름
     input_image_path = os.path.join(config['sketch_data_dir'], row['image_path'])
     
@@ -92,7 +140,7 @@ for i, row in train_info.iterrows():
     output_image_path = os.path.join(class_folder, f"converted_{os.path.basename(row['image_path'])}")
     
     # 프롬프트 정의
-    prompt = "more detailed sketch of " + mapping[class_name] 
+    prompt = "black and white sketch of " + mapping[class_name] 
     print(prompt)
     
     convert_sketch_to_image(input_image_path, output_image_path, prompt=prompt)
