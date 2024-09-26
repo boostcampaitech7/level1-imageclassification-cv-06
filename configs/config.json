@@ -14,5 +14,6 @@
     "name": "convnextv2_large",
     "pretrained": true
   },
-  "transform": "torchvision"
+  "transform": "torchvision",
+  "diffusion_aug": true
 }

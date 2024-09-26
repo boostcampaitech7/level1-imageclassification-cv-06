@@ -59,7 +59,12 @@ def main():
         test_size=0.2,
         stratify=train_info['target']
     )
-
+    
+    # diffusin model Data 추가
+    if config['diffusion_aug'] == True:
+        converted_train_df = pd.read_csv(config['converted_train_csv'])
+        train_df = pd.concat([converted_train_df, train_df])
+    
     # 학습에 사용할 Transform을 선언.
     transform_selector = SketchTransformSelector(
         transform_type = config['transform']
@@ -114,6 +119,10 @@ def main():
         weight_decay=0.000005
     )
 
+    optimizer = optim.Adam(model.parameters(), 
+                            lr=config['learning_rate'],
+                            weight_decay=0.000005)
+    
     # 스케줄러 초기화
     scheduler_step_size = 30  # 매 30step마다 학습률 감소
     scheduler_gamma = 0.1  # 학습률을 현재의 10%로 감소
