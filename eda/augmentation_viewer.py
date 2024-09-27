@@ -296,10 +296,10 @@ def main():
 
             col1, col2 = st.columns(2)
             with col1:
-                st.subheader("Original Grad-CAM Overlay")
+                st.markdown("#### Original Grad-CAM Overlay")
                 st.image(original_overlay, use_column_width=True)
             with col2:
-                st.subheader("Sketch Grad-CAM Overlay")
+                st.markdown("#### Sketch Grad-CAM Overlay")
                 st.image(sketch_overlay, use_column_width=True)
 
     st.divider()
