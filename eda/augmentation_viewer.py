@@ -21,6 +21,7 @@ from src.dataset import CustomDataset
 from src.models import ModelSelector
 
 
+# Random seed 고정 함수
 def set_seed(seed):
     random.seed(seed)
     np.random.seed(seed)
@@ -29,9 +30,10 @@ def set_seed(seed):
     torch.backends.cudnn.deterministic = True
     torch.backends.cudnn.benchmark = False
 
+# 시드 고정
 set_seed(42)
 
-# pkl 파일 로드 (이 부분은 파일을 한 번만 로드하도록 스크립트 시작 부분에 위치시키는 것이 좋습니다)
+# pkl 파일 로드
 with open('./eda/class_mapping.pkl', 'rb') as f:
     label_to_text = pickle.load(f)
 
@@ -39,12 +41,16 @@ with open('./eda/class_mapping.pkl', 'rb') as f:
 def label_to_text_func(label):
     return label_to_text.get(label, f"Unknown label: {label}")
 
+# 설정 파일 로드
 def load_config(config_path):
     with open(config_path, 'r') as f:
         return json.load(f)
 
 @st.cache_resource
 def load_model(config):
+    """
+    모델을 로드하고 평가 모드로 설정하는 함수
+    """
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     model_selector = ModelSelector(
         model_type=config['model']['type'],
@@ -60,6 +66,10 @@ def load_model(config):
 
 @st.cache_resource
 def load_all_datasets(config, library_type):
+    """
+    모든 데이터셋을 로드하는 함수
+    원본 및 스케치 변환된 train/test 데이터셋을 반환
+    """
     train_info_df = pd.read_csv(config['train_csv'])
     test_info_df = pd.read_csv(config['test_csv'])
 
@@ -89,13 +99,19 @@ def load_all_datasets(config, library_type):
         }
     }
 
-def find_target_layer(model):
-    #모델 구조 확인
-    #print(model)
+def select_target_layer(model):
+    """
+    Grad-CAM을 위한 타겟 레이어를 설정하는 함수
+    """
+    # 모델 구조 확인
+    # print(model)
     target_layer = 'model.stages.3.blocks.2.conv_dw'  # ConvNeXt V2의 마지막 stage의 마지막 블록의 conv_dw 레이어
     return target_layer
 
 def generate_gradcam(model, device, image, target_layer):
+    """
+    Grad-CAM을 생성하는 함수
+    """
     model.eval()
     model.requires_grad_(True)
     cam_extractor = GradCAM(model, target_layer)
@@ -106,10 +122,15 @@ def generate_gradcam(model, device, image, target_layer):
     outputs = model(image)
     _, pred = torch.max(outputs, 1)
     
+    # Grad-CAM 생성
     cam = cam_extractor(pred.item(), outputs)[0]
     cam = cam.cpu().detach().numpy()  # detach() 추가
-    cam = np.mean(cam, axis=0)  # 여러 채널이 있는 경우 평균을 취합니다
+    cam = np.mean(cam, axis=0)  # 여러 채널이 있는 경우 평균
+    
+    # CAM 크기를 입력 이미지 크기에 맞게 조정
     cam = cv2.resize(cam, (image.shape[3], image.shape[2]))
+
+    # CAM 정규화
     cam = (cam - cam.min()) / (cam.max() - cam.min())
     cam = np.uint8(255 * cam)
     
@@ -117,11 +138,12 @@ def generate_gradcam(model, device, image, target_layer):
     if cam.ndim != 2:
         cam = np.mean(cam, axis=2)
     
+    # 색상 맵 적용
     cam = cv2.applyColorMap(cam, cv2.COLORMAP_JET)
     cam = cv2.cvtColor(cam, cv2.COLOR_BGR2RGB)
     
     # 입력 이미지 처리
-    input_image = image.squeeze(0).cpu().detach().numpy().transpose((1, 2, 0))  # detach() 추가
+    input_image = image.squeeze(0).cpu().detach().numpy().transpose((1, 2, 0))
     if input_image.shape[2] == 1:  # 1채널 이미지인 경우
         input_image = np.squeeze(input_image, axis=2)
         input_image = np.stack([input_image] * 3, axis=-1)
@@ -134,9 +156,13 @@ def generate_gradcam(model, device, image, target_layer):
     overlay = np.uint8(overlay)
     
     model.requires_grad_(False)
+
     return overlay
 
 def get_misclassified_images(model, device, dataset, info_df, image_type):
+    """
+    잘못 분류된 이미지를 찾는 함수
+    """
     misclassified = []
     model.eval()
     
@@ -157,17 +183,15 @@ def get_misclassified_images(model, device, dataset, info_df, image_type):
                 image = data
             
             image = image.unsqueeze(0).to(device)
-            
             output = model(image)
-            
             _, pred = torch.max(output, 1)
-            
             true_label = info_df.iloc[i]['target']
             
+            # 예측이 틀린 경우 misclassified 리스트에 추가
             if pred.item() != true_label:
                 misclassified.append((i, pred.item(), true_label))
             
-            # 프로그레스 바 업데이트
+            # Streamlit 프로그레스 바 및 상태 텍스트 업데이트
             progress = (i + 1) / total_images
             progress_bar.progress(progress)
             status_text.text(f"Processing {image_type} image {i+1}/{total_images}")
@@ -181,6 +205,7 @@ def get_misclassified_images(model, device, dataset, info_df, image_type):
     
     return misclassified
 
+# get_misclassified_images 함수를 캐싱
 @st.cache_data
 def cached_get_misclassified_images(_model, device, _dataset, info_df, image_type):
     return get_misclassified_images(_model, device, _dataset, info_df, image_type)
@@ -188,15 +213,20 @@ def cached_get_misclassified_images(_model, device, _dataset, info_df, image_typ
 def main():
     st.title("Data Augmentation Viewer")
 
+    # 데이터 증강 시각화 섹션
     st.subheader("Data Augmentation Visualization")
     config = load_config('./configs/config.json')
 
+    # 변환 라이브러리 선택
     library_type = st.selectbox("Select transformation library", ["torchvision", "albumentations"])
 
+    # 모든 데이터셋 로드
     all_datasets = load_all_datasets(config, library_type)
 
+    # 데이터셋 유형 선택 (Train 또는 Test)
     dataset_type = st.radio("Select dataset", ["Train", "Test"]) 
     
+    # 세션 상태 초기화
     if 'original_dataset' not in st.session_state:
         st.session_state.original_dataset = {}
     if 'sketch_dataset' not in st.session_state:
@@ -204,6 +234,7 @@ def main():
     if 'info_df' not in st.session_state:
         st.session_state.info_df = {}
 
+    # 선택된 데이터셋 유형에 따라 세션 상태 업데이트
     st.session_state.original_dataset[dataset_type.lower()] = all_datasets[dataset_type.lower()]['original']
     st.session_state.sketch_dataset[dataset_type.lower()] = all_datasets[dataset_type.lower()]['sketch']
     st.session_state.info_df[dataset_type.lower()] = all_datasets[dataset_type.lower()]['info_df']
@@ -214,6 +245,7 @@ def main():
 
     is_train = dataset_type == "Train"
 
+    # 이미지 인덱스 선택 UI
     col1, col2 = st.columns([3, 1])
     with col1:
         image_index = st.slider("Select image index", 0, len(original_dataset) - 1, 0)
@@ -222,9 +254,8 @@ def main():
 
     original_image = original_dataset.get_original_image(image_index)
 
-    # 첫 번째 줄: 원본 이미지와 원본 변환 이미지
+    # 원본 이미지와 변환된 이미지 표시
     col1, col2 = st.columns(2)
-
     with col1:
         st.markdown("#### Original Image")
         st.image(original_image, use_column_width=True)
@@ -240,13 +271,10 @@ def main():
         original_augmented_image = original_augmented.permute(1, 2, 0).numpy()
         st.image(original_augmented_image, use_column_width=True, clamp=True)
         st.write(f"Shape: {original_augmented_image.shape}")
-        # st.write(f"Min: {original_augmented_image.min().item():.4f}, Max: {original_augmented_image.max().item():.4f}")
-        # st.write(f"Mean: {original_augmented_image.mean().item():.4f}, Std: {original_augmented_image.std().item():.4f}")
 
-    # 두 번째 줄: 스케치 변환 이미지 3장
+    # 스케치 변환 이미지 표시
     st.markdown("#### Sketch Transforms")
     col1, col2, col3 = st.columns(3)
-
     for i, col in enumerate([col1, col2, col3]):
         with col:
             if is_train:
@@ -256,17 +284,16 @@ def main():
             
             sketch_augmented_image = sketch_augmented.permute(1, 2, 0).numpy()
             st.image(sketch_augmented_image, use_column_width=True, clamp=True)
-            # st.write(f"Shape: {sketch_augmented_image.shape}")
-            # st.write(f"Min: {sketch_augmented_image.min().item():.4f}, Max: {sketch_augmented_image.max().item():.4f}")
-            # st.write(f"Mean: {sketch_augmented_image.mean().item():.4f}, Std: {sketch_augmented_image.std().item():.4f}")
 
+
+    # 세션 상태 초기화
     if 'model_loaded' not in st.session_state:
         st.session_state.model_loaded = False
     if 'model_load_success' not in st.session_state:
         st.session_state.model_load_success = False
 
+    # 모델 로드 섹션
     st.divider()
-
     st.markdown("### Model Load Button")
     if st.button("Load Model"):
         with st.spinner("Loading model..."):
@@ -279,9 +306,8 @@ def main():
     if st.session_state.model_load_success:
         st.success("Model loaded successfully!")
 
-    # Grad-CAM 시각화
+    # Grad-CAM 시각화 섹션
     st.subheader("Grad-CAM Visualization")
-    
     if st.button("Generate Grad-CAM"):
         if not st.session_state.model_loaded:
             st.warning("Please load the model first.")
@@ -289,7 +315,7 @@ def main():
             with st.spinner("Generating Grad-CAM..."):
                 model = st.session_state.model
                 device = st.session_state.device
-                target_layer = find_target_layer(model)
+                target_layer = select_target_layer(model)
 
                 original_overlay = generate_gradcam(model, device, original_augmented, target_layer)
                 sketch_overlay = generate_gradcam(model, device, sketch_augmented, target_layer)
@@ -304,9 +330,8 @@ def main():
 
     st.divider()
 
-    # 잘못 분류된 이미지 시각화
+    # 잘못 분류된 이미지 시각화 섹션
     st.subheader("Misclassified Image Visualization")
-
     image_type = st.radio("Select image type for misclassification analysis:", ("Original", "Sketch"))
 
     if 'misclassified' not in st.session_state:
@@ -330,6 +355,7 @@ def main():
                     i: original_dataset.get_original_image(i) for i, _, _ in st.session_state.misclassified
                 }
 
+    # 잘못 분류된 이미지 표시
     if st.session_state.misclassified is not None:
         misclassified = st.session_state.misclassified
         if misclassified:
@@ -339,7 +365,7 @@ def main():
             if 'current_misclassified_index' not in st.session_state:
                 st.session_state.current_misclassified_index = 0
 
-            # + 와 - 버튼 추가
+            # 이미지 네비게이션 UI
             col1, col2, col3 = st.columns([1, 3, 1])
             with col1:
                 if st.button("➖", key="minus_button", help="Previous image"):
@@ -357,6 +383,7 @@ def main():
             st.session_state.current_misclassified_index = selected_index
             selected_image_index, pred, true = misclassified[selected_index]
 
+            # 선택된 잘못 분류된 이미지 표시
             original_image = st.session_state.misclassified_original_images[selected_image_index]
             selected_dataset = st.session_state.misclassified_dataset
             augmented_data = selected_dataset[selected_image_index]

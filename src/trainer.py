@@ -20,17 +20,17 @@ class Trainer:
         result_path: str
     ):
         # 클래스 초기화: 모델, 디바이스, 데이터 로더 등 설정
-        self.model = model
-        self.device = device
-        self.train_loader = train_loader
-        self.val_loader = val_loader
-        self.optimizer = optimizer
-        self.scheduler = scheduler
-        self.loss_fn = loss_fn
-        self.epochs = epochs
-        self.result_path = result_path
-        self.best_models = []
-        self.lowest_loss = float('inf')
+        self.model = model # 훈련할 모델
+        self.device = device # 연산을 수행할 디바이스 (CPU or GPU)
+        self.train_loader = train_loader # 훈련 데이터 로더
+        self.val_loader = val_loader # 검증 데이터 로더
+        self.optimizer = optimizer # 최적화 알고리즘
+        self.scheduler = scheduler # 학습률 스케줄러
+        self.loss_fn = loss_fn # 손실 함수
+        self.epochs = epochs # 총 훈련 에폭 수
+        self.result_path = result_path # 모델 저장 경로
+        self.best_models = [] # 가장 좋은 상위 3개 모델의 정보를 저장할 리스트
+        self.lowest_loss = float('inf') # 가장 낮은 Loss를 저장할 변수
 
     def save_model(self, epoch, loss):
         # 모델 저장 경로 설정
