@@ -23,20 +23,25 @@ This project implements an image classification model using PyTorch and timm.
 - `eda/` : Code related to EDA
   - `augmentation_viewer.py`: Streamlit code for EDA  
 (Augmentation visualization,  
-GradCAM,  
-Misclassification analysis)
+Grad-CAM visualization,  
+Misclassification image visualization)
   - `class_mapping.pkl`: PKL file for mapping class label onto text
+  - `imagenet_idx2class.txt`: 
 - `src/`: Source code for the project
   - `dataset.py`: CustomDataset class
-  - `transforms.py`: Data transformations
-  - `models.py`: Model architecture
   - `loss.py`: Loss function
+  - `models.py`: Model architecture
+  - `sketch_transforms.py`:
   - `trainer.py`: Training loop
+  - `transforms.py`: Data transformations
 - `utils/`: Utility functions
 - `configs/`: Configuration files
-- `scripts/`: 
-  - `train.py`: Script to train the model
+- `scripts/`:
+  - `diffusionImage.py`:
   - `inference.py`: Script to run inference
+  - `moveFiles.py`: 
+  - `train.py`: Script to train the model
+  
 
 ## Usage
 
