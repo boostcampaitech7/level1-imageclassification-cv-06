@@ -188,6 +188,7 @@ def cached_get_misclassified_images(_model, device, _dataset, info_df, image_typ
 def main():
     st.title("Data Augmentation Viewer")
 
+    st.subheader("Data Augmentation Visualization")
     config = load_config('./configs/config.json')
 
     library_type = st.selectbox("Select transformation library", ["torchvision", "albumentations"])
@@ -225,11 +226,12 @@ def main():
     col1, col2 = st.columns(2)
 
     with col1:
-        st.subheader("Original Image")
+        st.markdown("#### Original Image")
         st.image(original_image, use_column_width=True)
+        st.write(f"Shape: {original_image.shape}")
 
     with col2:
-        st.subheader("Original Transform")
+        st.markdown("#### Original Transform")
         if is_train:
             original_augmented, _ = original_dataset[image_index]
         else:
@@ -238,11 +240,11 @@ def main():
         original_augmented_image = original_augmented.permute(1, 2, 0).numpy()
         st.image(original_augmented_image, use_column_width=True, clamp=True)
         st.write(f"Shape: {original_augmented_image.shape}")
-        st.write(f"Min: {original_augmented_image.min().item():.4f}, Max: {original_augmented_image.max().item():.4f}")
-        st.write(f"Mean: {original_augmented_image.mean().item():.4f}, Std: {original_augmented_image.std().item():.4f}")
+        # st.write(f"Min: {original_augmented_image.min().item():.4f}, Max: {original_augmented_image.max().item():.4f}")
+        # st.write(f"Mean: {original_augmented_image.mean().item():.4f}, Std: {original_augmented_image.std().item():.4f}")
 
     # 두 번째 줄: 스케치 변환 이미지 3장
-    st.subheader("Sketch Transforms")
+    st.markdown("#### Sketch Transforms")
     col1, col2, col3 = st.columns(3)
 
     for i, col in enumerate([col1, col2, col3]):
@@ -254,19 +256,27 @@ def main():
             
             sketch_augmented_image = sketch_augmented.permute(1, 2, 0).numpy()
             st.image(sketch_augmented_image, use_column_width=True, clamp=True)
-            st.write(f"Shape: {sketch_augmented_image.shape}")
-            st.write(f"Min: {sketch_augmented_image.min().item():.4f}, Max: {sketch_augmented_image.max().item():.4f}")
-            st.write(f"Mean: {sketch_augmented_image.mean().item():.4f}, Std: {sketch_augmented_image.std().item():.4f}")
+            # st.write(f"Shape: {sketch_augmented_image.shape}")
+            # st.write(f"Min: {sketch_augmented_image.min().item():.4f}, Max: {sketch_augmented_image.max().item():.4f}")
+            # st.write(f"Mean: {sketch_augmented_image.mean().item():.4f}, Std: {sketch_augmented_image.std().item():.4f}")
 
     if 'model_loaded' not in st.session_state:
         st.session_state.model_loaded = False
+    if 'model_load_success' not in st.session_state:
+        st.session_state.model_load_success = False
 
+    st.divider()
+
+    st.markdown("### Model Load Button")
     if st.button("Load Model"):
         with st.spinner("Loading model..."):
             model, device = load_model(config)
             st.session_state.model = model
             st.session_state.device = device
             st.session_state.model_loaded = True
+            st.session_state.model_load_success = True
+    
+    if st.session_state.model_load_success:
         st.success("Model loaded successfully!")
 
     # Grad-CAM 시각화
@@ -286,14 +296,16 @@ def main():
 
             col1, col2 = st.columns(2)
             with col1:
-                st.subheader("Original Grad-CAM Overlay")
+                st.markdown("#### Original Grad-CAM Overlay")
                 st.image(original_overlay, use_column_width=True)
             with col2:
-                st.subheader("Sketch Grad-CAM Overlay")
+                st.markdown("#### Sketch Grad-CAM Overlay")
                 st.image(sketch_overlay, use_column_width=True)
 
+    st.divider()
+
     # 잘못 분류된 이미지 시각화
-    st.subheader("Misclassified Images")
+    st.subheader("Misclassified Image Visualization")
 
     image_type = st.radio("Select image type for misclassification analysis:", ("Original", "Sketch"))
 
