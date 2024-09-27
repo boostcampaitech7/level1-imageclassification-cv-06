@@ -18,6 +18,7 @@ class Loss(nn.Module):
     
         return self.loss_fn(outputs, targets)
  
+# Cross Entropy의 클래스 불균형 문제를 해결하기 위한 Focal Loss
 class FocalLoss(nn.Module):
     def __init__(self, alpha=1, gamma=2, reduction='mean'):
         super(FocalLoss, self).__init__()
@@ -38,6 +39,7 @@ class FocalLoss(nn.Module):
         else:
             return focal_loss
 
+# 데이터 정규화 방법으로 모델의 일반화 성능을 향상시키기 위한 Label Smoothing Loss
 class LabelSmoothingLoss(nn.Module):
     def __init__(self, num_classes, smoothing=0.1):
         super(LabelSmoothingLoss, self).__init__()
@@ -51,6 +53,7 @@ class LabelSmoothingLoss(nn.Module):
         loss = -torch.sum(smoothed_labels * F.log_softmax(outputs, dim=1), dim=1)
         return loss.mean()
 
+# 클래스의 불균형을 고려하여 각 클래스에 대한 가중치를 적용하여 손실함수를 계산하는 Weighted Cross Entropy Loss
 class WeightedCrossEntropyLoss(nn.Module):
     def __init__(self, class_weights):
         super(WeightedCrossEntropyLoss, self).__init__()

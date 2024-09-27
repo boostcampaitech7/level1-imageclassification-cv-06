@@ -58,34 +58,38 @@ class Trainer:
     def train_epoch(self, acculation_steps=4) -> float:
         # 한 에폭 동안의 훈련을 진행
         self.model.train()
+        
         total_loss = 0.0
         correct_predictions = 0
         total_samples = 0
         progress_bar = tqdm(self.train_loader, desc="Training", leave=False)
-        scaler = GradScaler()
+        scaler = GradScaler() # AMP(Automatic Mixed Precision) 사용
 
-        self.optimizer.zero_grad() 
+        self.optimizer.zero_grad() # Gradient를 0으로 초기화
 
         for i, (images, targets) in enumerate(progress_bar):
             images, targets = images.to(self.device), targets.to(self.device)
             
+            # forward 단계에서 Mixed Precision을 사용하여 연산 속도 향상
             with autocast():
                 outputs = self.model(images)
                 loss = self.loss_fn(outputs, targets)
 
-            loss = loss / acculation_steps 
+            # 여러 배치에서 계산된 Gradient를 누적하기 전 손실 값을 정규화
+            loss = loss / acculation_steps
             scaler.scale(loss).backward()
-            total_loss += loss.item() 
+            total_loss += loss.item() # 손실 값을 누적
 
             # 훈련 정확도 계산
             _, predicted = torch.max(outputs, 1)
             correct_predictions += (predicted == targets).sum().item()
             total_samples += targets.size(0)
 
+            # 누적된 Gradient를 사용하여 모델 파라미터 업데이트 - Gradient Accumulation 적용
             if (i+1) % acculation_steps == 0 or (i+1) == len(self.train_loader):
                 scaler.step(self.optimizer)
-                scaler.update() 
-                self.optimizer.zero_grad()
+                scaler.update() # Scaling Factor를 업데이트
+                self.optimizer.zero_grad() # Gradient를 0으로 초기화    
                 self.scheduler.step()
                 
             progress_bar.set_postfix(loss=loss.item())
