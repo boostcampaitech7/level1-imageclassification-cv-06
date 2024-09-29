@@ -36,10 +36,10 @@ Misclassification image visualization)
   - `transforms.py`: Data transformations
 - `utils/`: Utility functions
 - `configs/`: Configuration files
-- `scripts/`:
-  - `diffusionImage.py`:
+- `scripts/`: Project execution files
+  - `diffusionImage.py`: Script to make augmented images using diffusion model
   - `inference.py`: Script to run inference
-  - `moveFiles.py`: 
+  - `moveFiles.py`: Script to move augmented images 
   - `train.py`: Script to train the model
   
 
