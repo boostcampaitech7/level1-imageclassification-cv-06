@@ -26,14 +26,14 @@ This project implements an image classification model using PyTorch and timm.
 Grad-CAM visualization,  
 Misclassification image visualization)
   - `class_mapping.pkl`: PKL file for mapping class label onto text
-  - `imagenet_idx2class.txt`: 
+  - `imagenet_idx2class.txt`: Txt file with class by train data folder
 - `src/`: Source code for the project
   - `dataset.py`: CustomDataset class
   - `loss.py`: Loss function
   - `models.py`: Model architecture
-  - `sketch_transforms.py`:
+  - `sketch_transforms.py`: Customized Data transformations for sketch data
   - `trainer.py`: Training loop
-  - `transforms.py`: Data transformations
+  - `transforms.py`: Basic Data transformations
 - `utils/`: Utility functions
 - `configs/`: Configuration files
 - `scripts/`: Project execution files
